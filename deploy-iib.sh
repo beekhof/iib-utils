@@ -88,7 +88,7 @@ function install_new_iib() {
     rm -f iib.log
     set +e
     while [ ${COUNTER} -lt 3 ]; do
-        oc image mirror -a $PULLSECRET $IIB_SOURCE/rh-osbs/iib:$IIB=${MIRRORED_IIB} --insecure --keep-manifest-list 2>&1 | tee -a iib.log
+        oc image mirror $IIB_SOURCE/rh-osbs/iib:$IIB=${MIRRORED_IIB} --insecure --keep-manifest-list $MIRROR_ARGS 2>&1 | tee -a iib.log
         ret=$?
         COUNTER=$((COUNTER+1))
         sleep 1
@@ -124,6 +124,7 @@ if [ $MIRROR_TARGET = "internal" ]; then
     oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
     MIRROR_TARGET=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
     MIRROR_NAMESPACE=openshift-marketplace
+    MIRROR_ARGS="$MIRROR_ARGS -a $PULLSECRET"
 
 # doesn't work...
 #echo "Allow everyone to pull from the internal registry"
@@ -223,7 +224,7 @@ EOF
     done
 
     echo "Mirroring $IIB images"
-    oc image mirror -a $PULLSECRET -f mirror.map --continue-on-error --insecure --keep-manifest-list $MIRROR_ARGS 2>&1 | tee images.log
+    oc image mirror -f mirror.map --continue-on-error --insecure --keep-manifest-list $MIRROR_ARGS 2>&1 | tee images.log
 
     cat $ICSP
     oc apply -f $ICSP
